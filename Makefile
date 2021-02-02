@@ -8,12 +8,13 @@ NAME	= minishell.a
 all:	$(NAME)
 
 %.o:	%.c
-	$(CC) -c $(FLAG) $<
+	$(CC) -c $(FLAGS) $<
+
 $(NAME): $(SRC:.c=.o)
 	@echo "Creating the program."
 	@$(AR) $(NAME) $(SRC:.c=.o)
 	ranlib $(NAME)
-	$(CC) -o $(PROGRAM) $(NAME)
+	$(CC) $(FLAGS) -o $(PROGRAM) $(NAME)
 
 clean:
 	@rm -rf $(SRC:.c=.o) $(NAME)
