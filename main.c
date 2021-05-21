@@ -16,25 +16,58 @@ char **g_env;
 //			break ;
 //	}
 //}
+int			ft_builtin_env(void)
+{
+	int			i;
 
-//int			exec_cmd(char **cmd)// ["cd", ...]
+	i = -1;
+	while (g_env[++i])
+	{
+		write(1, g_env[i], ft_strlen(g_env[i]));
+		write(1, "\n", 1);
+	}
+	return (1);
+}
+
+//int	pwd(int fd)
 //{
-//	if (ft_strcmp(cmd[0], "echo"))
-//		return (ft_builtin_echo(cmd + 1));
-//	else if (ft_strcmp(cmd[0], "cd"))
-//		return (ft_builtin_cd(cmd + 1));
-//	else if (ft_strcmp(cmd[0], "pwd"))
-//		return (ft_builtin_pwd(cmd + 1));
-//	else if (ft_strcmp(cmd[0], "export"))
-//		return (ft_builtin_export(cmd + 1));
-//	else if (ft_strcmp(cmd[0], "unset"))
-//		return (ft_builtin_unset(cmd + 1));
-//	else if (ft_strcmp(cmd[0], "env"))
-//		return (ft_builtin_env(cmd + 1));
-//	else if (ft_strcmp(cmd[0], "exit"))
-//		return (ft_builtin_exit(cmd + 1));
+//	char	buff[1024];
 
+//	if (getcwd(buff, sizeof(buff)) == NULL)
+//		return (1); // Failed
+//	write(fd, &buff, length(buff));
+//	write(fd, "\n", 1);
+//	return (0); // SUCCESS
 //}
+
+int			ft_builtin_pwd(void)
+{
+	char	buf[1024];
+
+	if (getcwd(buf, sizeof(buf)) == NULL)
+		return (-1);
+	write(1, &buf, ft_strlen(buf));
+	write(1, "\n", 1);
+	return (0);
+}
+int			exec_builtin(char **cmd)// ["cd", ...]
+{
+	if (ft_strcmp(cmd[0], "echo"))
+		return (1);
+	//else if (ft_strcmp(cmd[0], "cd"))
+	//	return (ft_builtin_cd(cmd + 1));
+	else if (ft_strcmp(cmd[0], "pwd"))
+		return (ft_builtin_pwd());
+	//else if (ft_strcmp(cmd[0], "export"))
+	//	return (ft_builtin_export(cmd + 1));
+	//else if (ft_strcmp(cmd[0], "unset"))
+	//	return (ft_builtin_unset(cmd + 1));
+	else if (ft_strcmp(cmd[0], "env"))
+		return (ft_builtin_env());
+	//else if (ft_strcmp(cmd[0], "exit"))
+	//	return (ft_builtin_exit(cmd + 1));
+	return (0);
+}
 
 int		exit_program(char *error_msg, int fd, int exit_code)
 {
@@ -133,7 +166,6 @@ int			run_cmd(char *exec_path, char **args)
 	pid_t	pid;
 
 	pid = fork();
-	printf("\n%s\n", exec_path);
 	if (pid == 0)
 		execve(exec_path, args, g_env);
 	else if (pid < 0)
@@ -163,7 +195,7 @@ int			is_exec(char *exec_path, struct stat stats, char **cmd)
 	return (0);
 }
 
-int			exec_cmd(char **cmd)
+int			exec_bin(char **cmd)		// equal to check_bin();
 {
 	char	**path = ft_split(getenv("PATH"), ':');
 	int		i;
@@ -244,10 +276,11 @@ void		init_env(int argc, char **argv, char **env)
 
 int			main(int argc, char **argv, char **env)
 {
-
+	printf("\n\n\n\n\n");
 	init_env(argc, argv, env);
-	char	*cmd[] = {"ping", "google.com", NULL};
-	exec_cmd(cmd);
+	char	*cmd[] = {"pwd", NULL};
+	exec_bin(cmd);
+	exec_builtin(cmd);
 	//int	i = -1;
 	//while (g_env[++i])
 	//	printf("%s\n", g_env[i]);
