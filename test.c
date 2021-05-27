@@ -1,12 +1,21 @@
 #include "minishell.h"
-
+//1
 int		main(int argc, char **argv, char  **env)
 {
-	(void )argc;
-	(void )argv;
-	int i = -1;
+	//int pid;
+	//pid = 30;
+	//pid = fork();
+	//printf("process id = %d\n", pid);
 
-	while (env[++i])
-		printf("%s\n",  env[i]);
+	//pid = fork();
+	////pid = fork();
 
+	////pid = fork();
+	//printf("process id = %d\n", pid);
+	////fork();
+	////printf("Hello world\n");
+	//while (1)
+	//	;
+	printf("pepepo\n");
+	return(0);
 }

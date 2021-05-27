@@ -1,6 +1,68 @@
 #include "minishell.h"
 # define true 1
 char **g_env;
+
+void		*safe_malloc(size_t size)  // equal to ft_memalloc() | To modify later
+{
+	void	*ptr;
+
+	if (!(ptr = malloc(size + 1)))
+		return (NULL);
+	ft_bzero(ptr, size + 1);
+	return (ptr);
+}
+
+int		error_msg(char *error_msg, int fd, int exit_code)
+{
+	write(fd, error_msg, ft_strlen(error_msg));
+	return (exit_code);
+}
+
+char		**realloc_env(int size)
+{
+	char	**env;
+	int		i;
+
+	env = (char**)safe_malloc(sizeof(char*) * (size + 1));
+	i = -1;
+	while (g_env[++i] && i < size)
+	{
+		env[i] = ft_strdup(g_env[i]);
+		free(g_env[i]);
+	}
+	free(g_env);
+	return(env);
+}
+
+char	*ft_strjoinch(char const *s1, char c)
+{
+	char	*new_str;
+	size_t	i;
+	size_t	s1_len;
+
+	if (!s1 || !c)
+		return (NULL);
+	s1_len = ft_strlen(s1);
+	new_str = safe_malloc(s1_len + 1);
+	if (!new_str)
+		return (NULL);
+	i = -1;
+	while (++i < s1_len)
+		*(new_str + i) = *(s1 + i);
+	*(new_str + i) = c;
+	return (new_str);
+}
+
+int			ft_strstartw(char *s1, char *s2)
+{
+	int		i;
+
+	i = -1;
+	while (s2[++i])
+		if (s1[i] != s2[i])
+			return (0);
+	return (1);
+}
 //void		shell_loop(void)
 //{
 //	int		status = 1;
@@ -50,30 +112,88 @@ int			ft_builtin_pwd(void)
 	write(1, "\n", 1);
 	return (0);
 }
+
+
+int			find_export_var(char *value)
+{
+	int		i;
+	char	*tmp;
+
+	i = -1;
+	tmp = safe_malloc(1);
+	while (g_env[++i])
+	{
+		tmp = ft_strjoinch(value, '=');
+		if (ft_strstartw(g_env[i], tmp))
+		{
+			free(tmp);
+			return(i);
+		}
+		free(tmp);
+	}
+	return (i);
+}
+
+void		export_var(char *var, char *str)
+{
+	int		index;
+	char	*tmp;
+
+
+	index = find_export_var(var);
+	tmp   = ft_strjoin("=", str);
+	if (g_env[index])
+	{
+		free(g_env[index]);
+		if (str)
+			g_env[index] = ft_strjoin(var, tmp);
+		else
+			g_env[index] = ft_strjoin(var, "=");
+	}
+	else
+	{
+		g_env = realloc_env(index + 1);
+		if (str)
+			g_env[index] = ft_strjoin(var, tmp);
+		else
+			g_env[index] = ft_strjoin(var, "=");
+	}
+	free(tmp);
+}
+
+int			ft_builtin_export(char **args)  // make sure to split w/ ("=") b4 passing the args
+{
+	args = ft_split(args[0], '=');
+	if (!args[0])
+	{
+		ft_builtin_env();
+		return (1);
+	}
+	if (args[1] && args[2])
+		return(error_msg("export: Too many arguments.", 2, 1));
+	export_var(args[0], args[1]);
+	return (1);
+}
+
 int			exec_builtin(char **cmd)// ["cd", ...]
 {
-	if (ft_strcmp(cmd[0], "echo"))
+	if (!ft_strcmp(cmd[0], "echo"))
 		return (1);
 	//else if (ft_strcmp(cmd[0], "cd"))
 	//	return (ft_builtin_cd(cmd + 1));
-	else if (ft_strcmp(cmd[0], "pwd"))
+	else if (!ft_strcmp(cmd[0], "pwd"))
 		return (ft_builtin_pwd());
-	//else if (ft_strcmp(cmd[0], "export"))
-	//	return (ft_builtin_export(cmd + 1));
+	else if (!ft_strcmp(cmd[0], "export"))
+		return (ft_builtin_export(cmd + 1));
 	//else if (ft_strcmp(cmd[0], "unset"))
 	//	return (ft_builtin_unset(cmd + 1));
-	else if (ft_strcmp(cmd[0], "env"))
+	else if (!ft_strcmp(cmd[0], "env"))
 		return (ft_builtin_env());
 	//else if (ft_strcmp(cmd[0], "exit"))
 	//	return (ft_builtin_exit(cmd + 1));
 	return (0);
 }
 
-int		exit_program(char *error_msg, int fd, int exit_code)
-{
-	write(fd, error_msg, ft_strlen(error_msg));
-	return (exit_code);
-}
 
 void		ft_freestrarr(char **arr)
 {
@@ -88,26 +208,17 @@ void		ft_freestrarr(char **arr)
 	}
 	arr = NULL;
 }
-int			ft_strstartw(char *s1, char *s2)
-{
-	int		i;
 
-	i = -1;
-	while (s2[++i])
-		if (s1[i] != s2[i])
-			return (0);
-	return (1);
-}
 
-int		ft_strcmp(const char *s1, const char *s2)
-{
-	int		i;
+//int		ft_strcmp(const char *s1, const char *s2)
+//{
+//	int		i;
 
-	i = 0;
-	while (*(s1 + i) && *(s1 + i) == *(s2 + i))
-		i++;
-	return (*((unsigned char *)s1 + i) - *((unsigned char *)s2 + i));
-}
+//	i = 0;
+//	while (*(s1 + i) && *(s1 + i) == *(s2 + i))
+//		i++;
+//	return (*((unsigned char *)s1 + i) - *((unsigned char *)s2 + i));
+//}
 
 int			ft_strendw(char *s1, char *s2)
 {
@@ -180,14 +291,14 @@ int			run_cmd(char *exec_path, char **args)
 	return (1);
 }
 
-int			is_exec(char *exec_path, struct stat stats, char **cmd)
+int			is_exec(char *exec_path, struct stat stats, char **cmd) // check better this function
 {
 	if (stats.st_mode & S_IFREG)
 	{
 		if (stats.st_mode & S_IXUSR)
 			return (run_cmd(exec_path, cmd));
 		else
-			exit_program("Permission denied!\n", 2, 0);
+			error_msg("Permission denied!\n", 2, 0);
 		free(exec_path);
 		return (1);
 	}
@@ -238,15 +349,7 @@ int			exec_bin(char **cmd)		// equal to check_bin();
 }
 
 
-void		*safe_malloc(size_t size)
-{
-	void	*ptr;
 
-	if (!(ptr = malloc(size)))
-		return (NULL);
-	ft_bzero(ptr, size);
-	return (ptr);
-}
 int			env_len(char **env) // to modify later. (No need for J)
 {
 	int		i;
@@ -270,17 +373,35 @@ void		init_env(int argc, char **argv, char **env)
 	while (env[++i])
 	{
 		if (!(g_env[i] = ft_strdup(env[i])))
-			exit_program("A memory allocation failed!\n", 2, 0);
+			error_msg("A memory allocation failed!\n", 2, 0);
 	}
 }
 
 int			main(int argc, char **argv, char **env)
 {
-	printf("\n\n\n\n\n");
+	printf("\n\n");
 	init_env(argc, argv, env);
-	char	*cmd[] = {"pwd", NULL};
-	exec_bin(cmd);
+	char	*cmd[] = {"export", "test=", NULL};
+	//exec_bin(cmd);
 	exec_builtin(cmd);
+	char	*cmd1[] = {"env", NULL};
+	exec_builtin(cmd1);
+	//exec_bin(cmd1);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//int	i = -1;
 	//while (g_env[++i])
 	//	printf("%s\n", g_env[i]);
