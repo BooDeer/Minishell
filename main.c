@@ -17,7 +17,15 @@ int		error_msg(char *error_msg, int fd, int exit_code)
 	write(fd, error_msg, ft_strlen(error_msg));
 	return (exit_code);
 }
+char		*find_env(char *str)
+{
+	int		index;
 
+	index = find_env(str);
+	if (g_env[index])
+		return (g_env[index]);
+	return (NULL);
+}
 char		**realloc_env(int size)
 {
 	char	**env;
@@ -289,7 +297,7 @@ int			home_run(void)
 
 	path = getenv("HOME");
 	if (!path)
-		return (error_msg("cd: HOME not set\n", 2, 0));
+		return (error_msg("cd: HOME not set\n", 2, 1));
 	if (*path == '\0')
 		path = getcwd(NULL, 1024);
 	else
@@ -298,14 +306,21 @@ int			home_run(void)
 		return (path_error(path));
 	export_var(ft_strdup("OLDPWD"), ft_strdup(getenv("PWD")));
 	export_var(ft_strdup("PATH"), path);
-	return (1);
+	return (0);
 }
+char		*find_path(char *str)
+{
+	if (ft_strcmp(str, "-"))
+		return ()
+}
+
 int			ft_builtin_cd(char **args)
 {
-	//char	*path;
+	char	*path;
 
 	if (!args[0])
 		return (home_run());
+	path = find_path(args[1]);
 	return (0);
 }
 
@@ -516,9 +531,9 @@ int			main(int argc, char **argv, char **env)
 	//printf("\n\n");
 	init_env(argc, argv, env);
 	//printf("%s\n", getenv("PWD"));
-	char	*cmd[] = {"export", "PWD", "pepepopo",NULL};
+	char	*cmd[] = {"cd" ,NULL};
 	exec_builtin(cmd);
-	//exec_bin(cmd1);
+	//exec_bin(cmd);
 	//printf("%s\n", getenv("PWD"));
 	//char	*cmd1[] = {"env",NULL};
 	//exec_builtin(cmd1);
