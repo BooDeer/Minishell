@@ -114,7 +114,7 @@ int			ft_builtin_pwd(void)
 }
 
 
-int			find_export_var(char *value)
+int			find_env(char *value)
 {
 	int		i;
 	char	*tmp;
@@ -140,7 +140,7 @@ void		export_var(char *var, char *str)
 	char	*tmp;
 
 
-	index = find_export_var(var);
+	index = find_env(var);
 	tmp   = ft_strjoin("=", str);
 	if (g_env[index])
 	{
@@ -163,7 +163,8 @@ void		export_var(char *var, char *str)
 
 int			ft_builtin_export(char **args)  // make sure to split w/ ("=") b4 passing the args
 {
-	args = ft_split(args[0], '=');
+	//args = ft_split(args[0], '=');
+	printf("%s\n%s\n", args[0], args[1]);
 	if (!args[0])
 	{
 		ft_builtin_env();
@@ -172,25 +173,158 @@ int			ft_builtin_export(char **args)  // make sure to split w/ ("=") b4 passing 
 	if (args[1] && args[2])
 		return(error_msg("export: Too many arguments.", 2, 1));
 	export_var(args[0], args[1]);
+	//free(args);
 	return (1);
+}
+
+void		delete_env(int	index)
+{
+	int		i;
+	int		j;
+
+	free(g_env[index]);
+	g_env[index] = NULL;
+	i = index;
+	j = index + 1;
+	while (g_env[i + 1])
+	{
+		g_env[i] = ft_strdup(g_env[i + 1]);
+		free(g_env[i + 1]);
+		i++;
+		j++;
+	}
+	g_env = realloc_env(j - 1);
+}
+
+int			ft_builtin_unset(char **args)
+{
+	int		i;
+	int		index;
+
+	printf("%s\n\n", args[0]);
+	if (!args[0])
+		return(error_msg("Error!\n too few arguments.", 2, 1));
+	i = -1;
+	while (args[++i])
+	{
+		index	= find_env(args[i]);
+		if (g_env[index])
+			delete_env(index);
+	}
+	return (1);
+}
+
+int			ft_builtin_exit(char **args)
+{
+	(void)args; // TODO: check what to do w/ exit
+
+	return (-1);
+}
+int			valid_option(char *str)
+{
+	int		i;
+
+	i = 0;
+	if(str[i] == '-' && str[++i] == 'n')
+	{
+		while (str[++i] == 'n')
+			continue ;
+		if (str[i] == '\0')
+			return (1);
+		return (0);
+	}
+	return (0);
+}
+
+void		check_n(char **args, int *i, int *j)
+{
+	while (args[++(*i)])
+	{
+		if (valid_option(args[*i]))
+			(*j)++;
+		else
+			break ;
+	}
+}
+void		exec_echo(char **args, int i)
+{
+	int		c;
+
+	c = 0;
+	while (args[++i])
+	{
+		if (args[i][0] == '\0')
+			continue ;
+		if (c)
+			write(1, " ", 1);
+		write(1, args[i], ft_strlen(args[i]));
+		c = 1;
+	}
+}
+int			ft_builtin_echo(char **args)
+{
+	int		option;
+	int		index;
+
+	index = 0;
+	option = 0;
+	check_n(args, &index, &option); // modify the return value and give it to the var option
+	exec_echo(args, index - 1);
+	if (!option)
+		write(1, "\n", 1);
+	return (0);
+}
+
+int			path_error(char *path)
+{
+	error_msg("cd: ", 2, 1);
+	error_msg(path, 2, 1);
+	error_msg(": No such file or directory\n", 2, 1);
+	free(path);
+	return (1);
+}
+int			home_run(void)
+{
+	char	*path;
+
+	path = getenv("HOME");
+	if (!path)
+		return (error_msg("cd: HOME not set\n", 2, 0));
+	if (*path == '\0')
+		path = getcwd(NULL, 1024);
+	else
+		path = ft_strdup(path);
+	if (chdir(path) == -1)
+		return (path_error(path));
+	export_var(ft_strdup("OLDPWD"), ft_strdup(getenv("PWD")));
+	export_var(ft_strdup("PATH"), path);
+	return (1);
+}
+int			ft_builtin_cd(char **args)
+{
+	//char	*path;
+
+	if (!args[0])
+		return (home_run());
+	return (0);
 }
 
 int			exec_builtin(char **cmd)// ["cd", ...]
 {
 	if (!ft_strcmp(cmd[0], "echo"))
 		return (1);
-	//else if (ft_strcmp(cmd[0], "cd"))
-	//	return (ft_builtin_cd(cmd + 1));
+	else if (!ft_strcmp(cmd[0], "cd"))
+		return (ft_builtin_cd(cmd + 1));
 	else if (!ft_strcmp(cmd[0], "pwd"))
 		return (ft_builtin_pwd());
 	else if (!ft_strcmp(cmd[0], "export"))
 		return (ft_builtin_export(cmd + 1));
-	//else if (ft_strcmp(cmd[0], "unset"))
-	//	return (ft_builtin_unset(cmd + 1));
+	else if (!ft_strcmp(cmd[0], "unset"))
+		return (ft_builtin_unset(cmd + 1));
 	else if (!ft_strcmp(cmd[0], "env"))
 		return (ft_builtin_env());
-	//else if (ft_strcmp(cmd[0], "exit"))
-	//	return (ft_builtin_exit(cmd + 1));
+	else if (!ft_strcmp(cmd[0], "exit"))
+		return (ft_builtin_exit(cmd + 1));
 	return (0);
 }
 
@@ -379,17 +513,15 @@ void		init_env(int argc, char **argv, char **env)
 
 int			main(int argc, char **argv, char **env)
 {
-	printf("\n\n");
+	//printf("\n\n");
 	init_env(argc, argv, env);
-	char	*cmd[] = {"export", "test=", NULL};
-	//exec_bin(cmd);
+	//printf("%s\n", getenv("PWD"));
+	char	*cmd[] = {"export", "PWD", "pepepopo",NULL};
 	exec_builtin(cmd);
-	char	*cmd1[] = {"env", NULL};
-	exec_builtin(cmd1);
 	//exec_bin(cmd1);
-
-
-
+	//printf("%s\n", getenv("PWD"));
+	//char	*cmd1[] = {"env",NULL};
+	//exec_builtin(cmd1);
 
 
 
