@@ -16,5 +16,12 @@
 # include <sys/types.h>
 # include "libft/libft.h"
 
+void		*safe_malloc(size_t size);
+int			error_msg(char *error_msg, int fd, int exit_code);
+char		*ft_strjoinch(char const *s1, char c);
+int			ft_strstartw(char *s1, char *s2);
+int			ft_strendw(char *s1, char *s2);
+
+
 #endif
 

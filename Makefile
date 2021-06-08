@@ -1,7 +1,7 @@
 CC 		= gcc
-FLAGS	= -Wall -Werror -Wextra -fsanitize=address -g
+FLAGS	= -Wall -Werror -Wextra #-fsanitize=address -g
 AR		= ar -rc
-SRC		= main.c
+SRC		= main.c utils_0.c
 PROGRAM = minishell
 NAME	= minishell.a
 MAKE 	= make -C

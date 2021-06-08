@@ -2,30 +2,7 @@
 # define true 1
 char **g_env;
 
-void		*safe_malloc(size_t size)  // equal to ft_memalloc() | To modify later
-{
-	void	*ptr;
 
-	if (!(ptr = malloc(size + 1)))
-		return (NULL);
-	ft_bzero(ptr, size + 1);
-	return (ptr);
-}
-
-int		error_msg(char *error_msg, int fd, int exit_code)
-{
-	write(fd, error_msg, ft_strlen(error_msg));
-	return (exit_code);
-}
-char		*find_env(char *str)
-{
-	int		index;
-
-	index = find_env(str);
-	if (g_env[index])
-		return (g_env[index]);
-	return (NULL);
-}
 char		**realloc_env(int size)
 {
 	char	**env;
@@ -42,35 +19,22 @@ char		**realloc_env(int size)
 	return(env);
 }
 
-char	*ft_strjoinch(char const *s1, char c)
-{
-	char	*new_str;
-	size_t	i;
-	size_t	s1_len;
 
-	if (!s1 || !c)
-		return (NULL);
-	s1_len = ft_strlen(s1);
-	new_str = safe_malloc(s1_len + 1);
-	if (!new_str)
-		return (NULL);
-	i = -1;
-	while (++i < s1_len)
-		*(new_str + i) = *(s1 + i);
-	*(new_str + i) = c;
-	return (new_str);
-}
-
-int			ft_strstartw(char *s1, char *s2)
+void		ft_freestrarr(char **arr)
 {
 	int		i;
 
 	i = -1;
-	while (s2[++i])
-		if (s1[i] != s2[i])
-			return (0);
-	return (1);
+	if (arr)
+	{
+		while (arr[++i])
+			free(arr[i]);
+		free(arr);
+	}
+	arr = NULL;
 }
+
+
 //void		shell_loop(void)
 //{
 //	int		status = 1;
@@ -142,6 +106,16 @@ int			find_env(char *value)
 	return (i);
 }
 
+char		*find_strenv(char *str)
+{
+	int		index;
+
+	index = find_env(str);
+	if (g_env[index])
+		return (g_env[index]);
+	return (NULL);
+}
+
 void		export_var(char *var, char *str)
 {
 	int		index;
@@ -171,8 +145,8 @@ void		export_var(char *var, char *str)
 
 int			ft_builtin_export(char **args)  // make sure to split w/ ("=") b4 passing the args
 {
-	//args = ft_split(args[0], '=');
-	printf("%s\n%s\n", args[0], args[1]);
+	args = ft_split(args[0], '=');
+	//printf("%s\n%s\n", args[0], args[1]);
 	if (!args[0])
 	{
 		ft_builtin_env();
@@ -181,7 +155,7 @@ int			ft_builtin_export(char **args)  // make sure to split w/ ("=") b4 passing 
 	if (args[1] && args[2])
 		return(error_msg("export: Too many arguments.", 2, 1));
 	export_var(args[0], args[1]);
-	//free(args);
+	ft_freestrarr(args);
 	return (1);
 }
 
@@ -209,7 +183,7 @@ int			ft_builtin_unset(char **args)
 	int		i;
 	int		index;
 
-	printf("%s\n\n", args[0]);
+	//printf("%s\n\n", args[0]);
 	if (!args[0])
 		return(error_msg("Error!\n too few arguments.", 2, 1));
 	i = -1;
@@ -293,25 +267,31 @@ int			path_error(char *path)
 }
 int			home_run(void)
 {
-	char	*path;
+	char	**path;
 
-	path = getenv("HOME");
-	if (!path)
+	path = ft_split(find_strenv("HOME"), '=');
+	if (!path[1])
 		return (error_msg("cd: HOME not set\n", 2, 1));
-	if (*path == '\0')
-		path = getcwd(NULL, 1024);
+	if (*path[1] == '\0')
+		path[1] = getcwd(NULL, 1024);
 	else
-		path = ft_strdup(path);
-	if (chdir(path) == -1)
-		return (path_error(path));
-	export_var(ft_strdup("OLDPWD"), ft_strdup(getenv("PWD")));
-	export_var(ft_strdup("PATH"), path);
+		path[1] = ft_strdup(path[1]);
+	if (chdir(path[1]) == -1)
+		return (path_error(path[1]));
+	export_var(ft_strdup("OLDPWD"), ft_strdup(find_strenv("PWD")));
+	export_var(ft_strdup("PATH"), path[1]);
+	ft_freestrarr(path);
 	return (0);
 }
 char		*find_path(char *str)
 {
 	if (ft_strcmp(str, "-"))
-		return ()
+		return (find_strenv("OLDPWD"));
+	else if (ft_strcmp(str, "~"))
+		return (find_strenv("HOME"));
+	else if (*str == '~' && ft_strcmp((str + 1), find_strenv("USER")))
+		return (find_strenv("HOME"));
+	return (str);
 }
 
 int			ft_builtin_cd(char **args)
@@ -321,6 +301,11 @@ int			ft_builtin_cd(char **args)
 	if (!args[0])
 		return (home_run());
 	path = find_path(args[1]);
+	if (chdir(path) == -1)
+		return (path_error(ft_strdup(path)));
+	path = getcwd(NULL, 1024);
+	export_var(ft_strdup("OLDPWD"), ft_strdup(find_strenv("PWD")));
+	export_var(ft_strdup("PWD"), path);
 	return (0);
 }
 
@@ -344,20 +329,6 @@ int			exec_builtin(char **cmd)// ["cd", ...]
 }
 
 
-void		ft_freestrarr(char **arr)
-{
-	int		i;
-
-	i = -1;
-	if (arr)
-	{
-		while (arr[++i])
-			free(arr[i]);
-		free(arr);
-	}
-	arr = NULL;
-}
-
 
 //int		ft_strcmp(const char *s1, const char *s2)
 //{
@@ -369,17 +340,7 @@ void		ft_freestrarr(char **arr)
 //	return (*((unsigned char *)s1 + i) - *((unsigned char *)s2 + i));
 //}
 
-int			ft_strendw(char *s1, char *s2)
-{
-	int		i;
-	
-	i = -1;
-	while (s1[++i])
-		if (s1[i] == s2[0])
-			if (ft_strcmp(s1 + i, s2) == 0)
-				return (1);
-	return (0);
-}
+
 
 char	*ft_strjoincl(char *s1, char *s2, int free_both)
 {
@@ -531,12 +492,14 @@ int			main(int argc, char **argv, char **env)
 	//printf("\n\n");
 	init_env(argc, argv, env);
 	//printf("%s\n", getenv("PWD"));
-	char	*cmd[] = {"cd" ,NULL};
+	char	*cmd[] = {"export", "pepepopo=test" ,NULL};
 	exec_builtin(cmd);
+	char	*cmd1[] = {"env" ,NULL};
+	exec_builtin(cmd1);
 	//exec_bin(cmd);
 	//printf("%s\n", getenv("PWD"));
-	//char	*cmd1[] = {"env",NULL};
-	//exec_builtin(cmd1);
+	char	*cmd2[] = {"cd",NULL};
+	exec_builtin(cmd2);
 
 
 
@@ -544,7 +507,8 @@ int			main(int argc, char **argv, char **env)
 
 
 
-
+	while(1)
+		;
 
 
 
