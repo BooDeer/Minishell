@@ -1,200 +1,14 @@
 #include "minishell.h"
 # define true 1
-char **g_env;
 
 
-char		**realloc_env(int size)
-{
-	char	**env;
-	int		i;
-
-	env = (char**)safe_malloc(sizeof(char*) * (size + 1));
-	i = -1;
-	while (g_env[++i] && i < size)
-	{
-		env[i] = ft_strdup(g_env[i]);
-		free(g_env[i]);
-	}
-	free(g_env);
-	return(env);
-}
 
 
-void		ft_freestrarr(char **arr)
-{
-	int		i;
-
-	i = -1;
-	if (arr)
-	{
-		while (arr[++i])
-			free(arr[i]);
-		free(arr);
-	}
-	arr = NULL;
-}
 
 
-//void		shell_loop(void)
-//{
-//	int		status = 1;
-//	char	*instruction;
-//	char	buf[10];
-//	while (1)
-//	{
-//		write(1,"> ", 2);
-//		memset(buf, 0, 9);
-//		read(0, buf, 9);
-//		printf("Buf: |%s|\n", buf);
-//		if (!status)
-//			break ;
-//	}
-//}
-int			ft_builtin_env(void)
-{
-	int			i;
-
-	i = -1;
-	while (g_env[++i])
-	{
-		write(1, g_env[i], ft_strlen(g_env[i]));
-		write(1, "\n", 1);
-	}
-	return (1);
-}
-
-//int	pwd(int fd)
-//{
-//	char	buff[1024];
-
-//	if (getcwd(buff, sizeof(buff)) == NULL)
-//		return (1); // Failed
-//	write(fd, &buff, length(buff));
-//	write(fd, "\n", 1);
-//	return (0); // SUCCESS
-//}
-
-int			ft_builtin_pwd(void)
-{
-	char	buf[1024];
-
-	if (getcwd(buf, sizeof(buf)) == NULL)
-		return (-1);
-	write(1, &buf, ft_strlen(buf));
-	write(1, "\n", 1);
-	return (0);
-}
 
 
-int			find_env(char *value)
-{
-	int		i;
-	char	*tmp;
 
-	i = -1;
-	tmp = safe_malloc(1);
-	while (g_env[++i])
-	{
-		tmp = ft_strjoinch(value, '=');
-		if (ft_strstartw(g_env[i], tmp))
-		{
-			free(tmp);
-			return(i);
-		}
-		free(tmp);
-	}
-	return (i);
-}
-
-char		*find_strenv(char *str)
-{
-	int		index;
-
-	index = find_env(str);
-	if (g_env[index])
-		return (g_env[index]);
-	return (NULL);
-}
-
-void		export_var(char *var, char *str)
-{
-	int		index;
-	char	*tmp;
-
-
-	index = find_env(var);
-	tmp   = ft_strjoin("=", str);
-	if (g_env[index])
-	{
-		free(g_env[index]);
-		if (str)
-			g_env[index] = ft_strjoin(var, tmp);
-		else
-			g_env[index] = ft_strjoin(var, "=");
-	}
-	else
-	{
-		g_env = realloc_env(index + 1);
-		if (str)
-			g_env[index] = ft_strjoin(var, tmp);
-		else
-			g_env[index] = ft_strjoin(var, "=");
-	}
-	free(tmp);
-}
-
-int			ft_builtin_export(char **args)  // make sure to split w/ ("=") b4 passing the args
-{
-	args = ft_split(args[0], '=');
-	//printf("%s\n%s\n", args[0], args[1]);
-	if (!args[0])
-	{
-		ft_builtin_env();
-		return (1);
-	}
-	if (args[1] && args[2])
-		return(error_msg("export: Too many arguments.", 2, 1));
-	export_var(args[0], args[1]);
-	ft_freestrarr(args);
-	return (1);
-}
-
-void		delete_env(int	index)
-{
-	int		i;
-	int		j;
-
-	free(g_env[index]);
-	g_env[index] = NULL;
-	i = index;
-	j = index + 1;
-	while (g_env[i + 1])
-	{
-		g_env[i] = ft_strdup(g_env[i + 1]);
-		free(g_env[i + 1]);
-		i++;
-		j++;
-	}
-	g_env = realloc_env(j - 1);
-}
-
-int			ft_builtin_unset(char **args)
-{
-	int		i;
-	int		index;
-
-	//printf("%s\n\n", args[0]);
-	if (!args[0])
-		return(error_msg("Error!\n too few arguments.", 2, 1));
-	i = -1;
-	while (args[++i])
-	{
-		index	= find_env(args[i]);
-		if (g_env[index])
-			delete_env(index);
-	}
-	return (1);
-}
 
 int			ft_builtin_exit(char **args)
 {
@@ -330,58 +144,6 @@ int			exec_builtin(char **cmd)// ["cd", ...]
 
 
 
-//int		ft_strcmp(const char *s1, const char *s2)
-//{
-//	int		i;
-
-//	i = 0;
-//	while (*(s1 + i) && *(s1 + i) == *(s2 + i))
-//		i++;
-//	return (*((unsigned char *)s1 + i) - *((unsigned char *)s2 + i));
-//}
-
-
-
-char	*ft_strjoincl(char *s1, char *s2, int free_both)
-{
-	char	*new;
-
-	if (!(new = ft_strjoin(s1, s2)))
-		return (NULL);
-	free(s1);
-	s1 = NULL;
-	if (free_both)
-	{
-		free(s2);
-		s2 = NULL;
-	}
-	return (new);
-}
-
-char		*ft_pathjoin(char  *s1, char *s2)
-{
-	char	*tmp;
-	if (!s1 || !s2)
-		return (NULL);
-	if (!ft_strendw(s1, "/"))
-	{
-		if (s2[0] == '/')
-			return (ft_strjoin(s1, s2));
-		else
-		{
-			tmp = ft_strjoincl(ft_strjoin(s1, "/"), s2, 0);
-			return (tmp);
-		}
-	}
-	else
-	{
-		if (s2[0] == '/')
-			return (ft_strjoin(s1, s2 + 1));
-		else
-			return (ft_strjoin(s1, s2));
-	}
-}
-
 int			run_cmd(char *exec_path, char **args)
 {
 	pid_t	pid;
@@ -460,32 +222,8 @@ int			exec_bin(char **cmd)		// equal to check_bin();
 
 
 
-int			env_len(char **env) // to modify later. (No need for J)
-{
-	int		i;
-	int		j;
-	
-	i = -1;
-	j = 0;
-	while(env[++i])
-		j++;
-	return  (j);
-}
-void		init_env(int argc, char **argv, char **env)
-{
-	int		i;
 
-	(void)argc;
-	(void)argv;
 
-	g_env = (char**)safe_malloc(sizeof(char *) * (env_len(env) + 1));
-	i = -1;
-	while (env[++i])
-	{
-		if (!(g_env[i] = ft_strdup(env[i])))
-			error_msg("A memory allocation failed!\n", 2, 0);
-	}
-}
 
 int			main(int argc, char **argv, char **env)
 {
@@ -502,13 +240,6 @@ int			main(int argc, char **argv, char **env)
 	exec_builtin(cmd2);
 
 
-
-
-
-
-
-	while(1)
-		;
 
 
 

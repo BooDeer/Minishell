@@ -1,14 +1,14 @@
 CC 		= gcc
 FLAGS	= -Wall -Werror -Wextra #-fsanitize=address -g
 AR		= ar -rc
-SRC		= main.c utils_0.c
+SRC		= main.c utils_0.c utils_1.c env.c pwd.c export.c unset.c
 PROGRAM = minishell
 NAME	= minishell.a
 MAKE 	= make -C
 all:	$(NAME)
 
 %.o:	%.c
-	$(CC) -c $(FLAGS) $<
+	@$(CC) -c $(FLAGS) $<
 
 $(NAME): $(SRC:.c=.o)
 	@echo "Creating the program."
