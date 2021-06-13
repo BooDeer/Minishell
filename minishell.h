@@ -16,6 +16,23 @@
 # include <sys/types.h>
 # include "libft/libft.h"
 
+
+
+
+
+typedef struct	s_cmd		// PS: This is just a test struct for linked list.
+{
+	int				is_piped;
+	char			*fdin;      // "15:16:20"
+	char			*fdout;     // "r15:a16"
+	char			**args;     // array of arguments
+	struct s_cmd	*next;
+	struct s_cmd	*previous;
+}				t_cmd[2];
+
+
+
+
 void		*safe_malloc(size_t size);
 int			error_msg(char *error_msg, int fd, int exit_code);
 char		*ft_strjoinch(char const *s1, char c);

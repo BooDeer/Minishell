@@ -220,14 +220,40 @@ int			exec_bin(char **cmd)		// equal to check_bin();
 
 }
 
+void		dup_fd(t_cmd *cmd, int fds[2])
+{
+	if (cmd->is_piped == 1)
+		dup2(fds[1], 1);
+	else if (cmd->)
+}
 
+void		pipes(t_cmd *cmd)
+{
+	t_cmd 	*head;
+	int		fds[2];
+	int		pid;
+	int		input;
 
-
+	head = cmd;
+	while (cmd)
+	{
+		pipe(fds);
+		pid = fork();
+		if (!pid)
+		{
+			dup_fd(cmd, fds);
+			exit(exec_bin(cmd));
+		}
+		wait(&pid);
+		//input = close_all()
+	}
+}
 
 
 int			main(int argc, char **argv, char **env)
 {
 	//printf("\n\n");
+	
 	init_env(argc, argv, env);
 	//printf("%s\n", getenv("PWD"));
 	char	*cmd[] = {"export", "pepepopo=test" ,NULL};
@@ -238,7 +264,14 @@ int			main(int argc, char **argv, char **env)
 	//printf("%s\n", getenv("PWD"));
 	char	*cmd2[] = {"cd",NULL};
 	exec_builtin(cmd2);
-
+	t_cmd	test;
+	test[0].is_piped = 1;
+	test[0].args = cmd;
+	test[0].next = &test[1];
+	test[1].is_piped = 0;
+	test[1].args = cmd1;
+	test[1].next = NULL;
+	pipes(&test);
 
 
 
