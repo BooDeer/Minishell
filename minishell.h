@@ -23,12 +23,13 @@
 typedef struct	s_cmd		// PS: This is just a test struct for linked list.
 {
 	int				is_piped;
+	int				pos;		// for debugging. (Inserting dummy data)
 	char			*fdin;      // "15:16:20"
 	char			*fdout;     // "r15:a16"
 	char			**args;     // array of arguments
 	struct s_cmd	*next;
 	struct s_cmd	*previous;
-}				t_cmd[2];
+}				t_cmd;
 
 
 

@@ -220,36 +220,78 @@ int			exec_bin(char **cmd)		// equal to check_bin();
 
 }
 
-void		dup_fd(t_cmd *cmd, int fds[2])
-{
-	if (cmd->is_piped == 1)
-		dup2(fds[1], 1);
-	else if (cmd->)
-}
+//void		dup_fd(t_cmd *cmd, int fds[2])
+//{
+//	if (cmd->is_piped == 1 && cmd->previous->is_piped == 0)
+//		dup2(fds[1], 1);
+//	else if (cmd->)
+//}
 
-void		pipes(t_cmd *cmd)
-{
-	t_cmd 	*head;
-	int		fds[2];
-	int		pid;
-	int		input;
+//void		pipes(t_cmd *cmd)
+//{
+//	t_cmd 	*head;
+//	int		fds[2];
+//	int		pid;
+//	int		input;
 
-	head = cmd;
-	while (cmd)
+//	head = cmd;
+//	while (cmd)
+//	{
+//		pipe(fds);
+//		pid = fork();
+//		if (!pid)
+//		{
+//			//dup_fd(cmd, fds);
+//			exit(exec_bin(cmd));
+//		}
+//		wait(&pid);
+//		//input = close_all()
+//		cmd = cmd->next;
+//	}
+//}
+void		append_lst(t_cmd **cmd, t_cmd *src)
+{
+	t_cmd	*tmp;
+
+	if (*cmd == NULL)
+		*cmd = src;
+	else
 	{
-		pipe(fds);
-		pid = fork();
-		if (!pid)
-		{
-			dup_fd(cmd, fds);
-			exit(exec_bin(cmd));
-		}
-		wait(&pid);
-		//input = close_all()
+		tmp = *cmd;
+		while (tmp->next != NULL)
+			tmp = tmp->next;
+		tmp->next = src;
 	}
 }
-
-
+t_cmd		*fill_dummy(t_cmd **cmd, char **cmd_0, char **cmd_1)
+{
+	int		i;
+	t_cmd	*dummy;
+	i = 0;
+	while (i < 2)
+	{
+		dummy = (t_cmd *)malloc(sizeof(t_cmd));
+		dummy->pos = i;
+		switch (i)
+		{
+		case 0:
+			dummy->is_piped = 0;
+			dummy->previous = NULL;
+			dummy->next = NULL;
+			dummy->args = cmd_0;
+			break;
+		case 1:
+			dummy->is_piped = 1;
+			dummy->next = NULL;
+			dummy->args = cmd_1;
+		default:
+			break;
+		}
+		append_lst(cmd ,dummy);
+		i++;
+	}
+	return (*cmd);
+}
 int			main(int argc, char **argv, char **env)
 {
 	//printf("\n\n");
@@ -257,21 +299,23 @@ int			main(int argc, char **argv, char **env)
 	init_env(argc, argv, env);
 	//printf("%s\n", getenv("PWD"));
 	char	*cmd[] = {"export", "pepepopo=test" ,NULL};
-	exec_builtin(cmd);
+	//exec_builtin(cmd);
 	char	*cmd1[] = {"env" ,NULL};
-	exec_builtin(cmd1);
+	//exec_builtin(cmd1);
 	//exec_bin(cmd);
 	//printf("%s\n", getenv("PWD"));
-	char	*cmd2[] = {"cd",NULL};
-	exec_builtin(cmd2);
-	t_cmd	test;
-	test[0].is_piped = 1;
-	test[0].args = cmd;
-	test[0].next = &test[1];
-	test[1].is_piped = 0;
-	test[1].args = cmd1;
-	test[1].next = NULL;
-	pipes(&test);
+	//char	*cmd2[] = {"cd",NULL};
+	//exec_builtin(cmd2);
+	t_cmd	*test = NULL;					// testing linked ist
+	test = fill_dummy(&test, cmd, cmd1);
+	printf("===>%d\n===>%s\n", test->is_piped, test->args[0]);
+	//test[0].is_piped = 1;
+	//test[0].args = cmd;
+	//test[0].next = &test[1];
+	//test[1].is_piped = 0;
+	//test[1].args = cmd1;
+	//test[1].next = NULL;
+	//pipes(&test);
 
 
 

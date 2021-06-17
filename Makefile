@@ -1,5 +1,5 @@
 CC 		= gcc
-FLAGS	= -Wall -Werror -Wextra #-fsanitize=address -g
+FLAGS	= -Wall -Werror -Wextra -fsanitize=address -g
 AR		= ar -rc
 SRC		= main.c utils_0.c utils_1.c env.c pwd.c export.c unset.c
 PROGRAM = minishell
