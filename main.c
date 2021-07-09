@@ -212,17 +212,18 @@ int			exec_bin(char **cmd)		// equal to check_bin();
 
 }
 
-int		dup_fd(t_cmd *cmd, int fds[2], int input)
+int		dup_fd(t_cmd *cmd, int fds[2], int input, int fd_zero)
 {
+	input++;
 	if (cmd->is_piped == 0 && cmd->next->is_piped == 1)
 		dup2(fds[1], 1);
 	else if (cmd->is_piped && cmd->next && cmd->next->is_piped)
 	{
-		dup2(input, 0);
+		dup2(fd_zero, 0);
 		dup2(fds[1], 1);
 	}
 	else
-		dup2(input, 0);
+		dup2(fd_zero, 0);
 	if (cmd->is_piped && cmd->next && cmd->next->is_piped)
 		return(2);
 	return (0);
@@ -244,25 +245,34 @@ void		pipes(t_cmd *cmd)
 	t_cmd 	*head;
 	int		fds[2];
 	int		pid;
-	int		input;
+	int		input  = 0;
 	int		pos = 0;
-
+	int		fd_zero = 0;
 	head = cmd;
 	while (cmd)
 	{
-		pipe(fds);
+		if (cmd->next)
+			pipe(fds);
 		pid = fork();
 		if (!pid)
 		{
-			pos = dup_fd(cmd, fds, input);
+			pos = dup_fd(cmd, fds, input, fd_zero);
+			close(fds[1]);
+			close(fds[0]);
+			close(fd_zero);
 			exit(exec_bin(cmd->args));
 		}
-		wait(&pid);
-		input = close_all(input, fds[0], fds[1], pos);
+		if (fd_zero)
+			close(fd_zero);
+		fd_zero = fds[0];
+		//input = close_all(input, fds[0], fds[1], pos);
 		if (!cmd->next || !cmd->next->is_piped)
 			break ;
 		cmd = cmd->next;
+		close(fds[1]);
 	}
+	wait(&pid);
+	
 }
 void		append_lst(t_cmd **cmd, t_cmd *src)
 {
@@ -315,7 +325,8 @@ int			main(int argc, char **argv, char **env)
 	
 	init_env(argc, argv, env);
 	//printf("%s\n", getenv("PWD"));
-	char	*cmd[] = {"env" ,NULL};
+	char	*cmd[] = {"echo" , "dev/random", NULL};
+	//char	*cmd[] = {"cat" , "main.c", NULL};
 	//exec_builtin(cmd);
 	char	*cmd1[] = {"wc",NULL};
 	//exec_builtin(cmd1);
@@ -325,7 +336,7 @@ int			main(int argc, char **argv, char **env)
 	//exec_builtin(cmd2);
 	t_cmd	*test = NULL;					// testing linked ist
 	test = fill_dummy(&test, cmd, cmd1);
-	printf("===>%d\n===>%s\n", test->is_piped, test->args[0]);
+	//printf("===>%d\n===>%s\n", test->is_piped, test->args[0]);
 	pipes(test);
 	//test[0].is_piped = 1;
 	//test[0].args = cmd;
