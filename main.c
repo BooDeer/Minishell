@@ -319,12 +319,61 @@ t_cmd		*fill_dummy(t_cmd **cmd, char **cmd_0, char **cmd_1)
 	return (*cmd);
 }
 
+void		append_lstk(t_token **cmd, t_token *src)
+{
+	t_token	*tmp;
+
+	if (*cmd == NULL)
+		*cmd = src;
+	else
+	{
+		tmp = *cmd;
+		while (tmp->next != NULL)
+			tmp = tmp->next;
+		tmp->next = src;
+	}
+}
+
+/*
+*
+*	arr ==> ["main.c", "test.c", NULL]
+*	type ==> "aowwwa"  a = append, o = override,  w = write
+*/
+
+void		fill_token(t_token **head, char **arr, char* type)
+{
+
+	t_token  *token;
+	int			i = -1;
+
+	while (arr[++i])
+	{
+		token = (t_token *)malloc(sizeof(t_token));
+		token->value = ft_strdup(arr[i]);
+		token->type = type[i];
+		token->next = NULL;
+		append_lstk(head, token);
+	}
+}
+
+void		output_token(t_token *token)
+{
+	while(token)
+	{
+		printf("%s====>%c\n", token->value, token->type);
+		token = token->next;
+	}
+}
+
 int			main(int argc, char **argv, char **env)
 {
 	//printf("\n\n");
-	
+	t_cmd	*test = NULL;					// testing linked ist
+	t_token *token = NULL;
+	char	*red[] =  {"main.c", "test.c", "main.c", NULL};
+	fill_token(&token, red, "awa");
+	output_token(token);
 	init_env(argc, argv, env);
-	//printf("%s\n", getenv("PWD"));
 	char	*cmd[] = {"echo" , "dev/random", NULL};
 	//char	*cmd[] = {"cat" , "main.c", NULL};
 	//exec_builtin(cmd);
@@ -334,7 +383,6 @@ int			main(int argc, char **argv, char **env)
 	//printf("%s\n", getenv("PWD"));
 	//char	*cmd2[] = {"cd",NULL};
 	//exec_builtin(cmd2);
-	t_cmd	*test = NULL;					// testing linked ist
 	test = fill_dummy(&test, cmd, cmd1);
 	//printf("===>%d\n===>%s\n", test->is_piped, test->args[0]);
 	pipes(test);

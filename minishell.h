@@ -16,16 +16,19 @@
 # include <sys/types.h>
 # include "libft/libft.h"
 
-
-
-
+typedef struct s_token
+{
+	char			type;
+	char			*value;
+	struct s_token	*next;
+}				t_token;
 
 typedef struct	s_cmd		// PS: This is just a test struct for linked list.
 {
 	int				is_piped;
 	int				pos;		// for debugging. (Inserting dummy data)
-	char			*fdin;      // "15:16:20"
-	char			*fdout;     // "r15:a16"
+	t_list			*in_token;
+	t_list			*out_token;
 	char			**args;     // array of arguments
 	struct s_cmd	*next;
 	struct s_cmd	*previous;
