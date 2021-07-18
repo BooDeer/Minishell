@@ -8,6 +8,15 @@ int			ft_builtin_exit(char **args)
 
 	return (-1);
 }
+
+int			file_dont_exist(char *file)
+{
+	write(2, "minishell: ", 11);
+	write(2, file, ft_strlen(file));
+	write(2,": No such file or directory\n", 28);
+	return (1);
+}
+
 int			valid_option(char *str)
 {
 	int		i;
@@ -365,51 +374,111 @@ void		output_token(t_token *token)
 	}
 }
 
+void		ft_create_file(char *file, char type) // check file if doesn't exit. (Manage the error too)
+{
+	if (type == 'c')
+		close(open(file, O_RDWR | O_CREAT | O_TRUNC, 0666));
+	else if (type == 'a')
+		close(open(file, O_RDWR | O_CREAT | O_APPEND, 0666));
+}
+
+t_token		**check_files(int *ret, t_token *red)
+{
+	int		tmp;
+
+	t_token **files;
+	t_token *tmp_red;
+
+	files = (t_token **)ft_calloc(2, sizeof(t_token *));
+	tmp_red = red;
+	while(tmp_red->value)
+	{
+		ft_create_file(tmp_red->value, tmp_red->type);
+		if (tmp_red->type == 'c' || tmp_red->type == 'a')
+			files[0] = tmp_red;
+		else if (tmp_red->type == 'r')
+		{
+			tmp = open(tmp_red->value, O_RDONLY, 0666);
+			if (tmp == -1)
+			{
+				*ret = file_dont_exist(tmp_red->value);
+				break ;
+			}
+			files[1] = tmp_red;
+		}
+		if (tmp_red->next)
+			tmp_red = tmp_red->next;
+		else
+			break ;
+	}
+	return (files);
+}
+
+int			open_file(t_token *red)
+{
+	if (red->type == 'c')
+		return (open(red->value, O_WRONLY | O_CREAT | O_TRUNC, 0644));
+	else if (red->type == 'a')
+		return (open(red->value, O_WRONLY | O_CREAT | O_APPEND, 0644));
+	return (1);
+}
+
+int		redirections(t_token *token)
+{
+	t_token		**files;
+	int			ret;
+	int			fd_in;
+	int			fd_out;
+
+	files = check_files(&ret, token);
+	if (ret == 1)
+		return (1);
+	if (files[0])
+	{
+		fd_out = open_file(files[0]);
+		dup2(fd_out, 1);
+		close(fd_out);
+	}
+	if (files[1])
+	{
+		fd_in = open(files[1]->value, O_RDONLY, 0666);
+		dup2(fd_in, 0);
+		close(fd_in);
+	}
+	free(files);
+	return (0);
+}
+
 int			main(int argc, char **argv, char **env)
 {
 	//printf("\n\n");
-	t_cmd	*test = NULL;					// testing linked ist
+	//t_cmd	*test = NULL;					// testing linked ist
 	t_token *token = NULL;
-	char	*red[] =  {"main.c", "test.c", "main.c", NULL};
-	fill_token(&token, red, "awa");
-	output_token(token);
+	int		fd_in;
+	int		fd_out;
+	fd_in = dup(0);
+	fd_out = dup(1);
+	char	*red[] =  {"test.c", "test.txt", "test", NULL};
+	fill_token(&token, red, "aca");
+	//output_token(token);
 	init_env(argc, argv, env);
-	char	*cmd[] = {"echo" , "dev/random", NULL};
-	//char	*cmd[] = {"cat" , "main.c", NULL};
-	//exec_builtin(cmd);
-	char	*cmd1[] = {"wc",NULL};
+	char	*cmd[] = {"echo" , "hello", NULL};
+	//char	*cmd1[] = {"wc",NULL};
 	//exec_builtin(cmd1);
-	//exec_bin(cmd);
+	redirections(token); // in the exec_func dup fd_in and fd_out before opening redirections
+	exec_bin(cmd);
 	//printf("%s\n", getenv("PWD"));
 	//char	*cmd2[] = {"cd",NULL};
 	//exec_builtin(cmd2);
-	test = fill_dummy(&test, cmd, cmd1);
+	//test = fill_dummy(&test, cmd, cmd1);
 	//printf("===>%d\n===>%s\n", test->is_piped, test->args[0]);
-	pipes(test);
-	//test[0].is_piped = 1;
-	//test[0].args = cmd;
-	//test[0].next = &test[1];
-	//test[1].is_piped = 0;
-	//test[1].args = cmd1;
-	//test[1].next = NULL;
+	//pipes(test);
+	dup2(fd_in, 0);
+	dup2(fd_out, 1);
+	close(fd_in);
+	close(fd_out);
 
 
 
-
-
-	//int	i = -1;
-	//while (g_env[++i])
-	//	printf("%s\n", g_env[i]);
-	//char **path = ft_split(getenv("PATH"), ':');
-	//int i = -1;
-	//printf("===================\n===================\n");
-	//while (path[++i])
-	//{
-	//	printf("%s\n", path[i]);
-	//	//execve(path[i],  NULL, NULL);
-	//}
-	//printf("===================\n===================\n");
-	//char *arg[] = {"-C", NULL};
-	//execve("/bin/ls", arg, NULL);
 	return (0);
 }
